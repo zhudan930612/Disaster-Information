@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>平台运营数据 - 灾害信息员竞赛SaaS平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#0052ff',
+            'brand-hover': '#578bfa',
+            'brand-light': 'rgba(0,82,255,0.08)',
+            'near-black': '#0a0b0d',
+            'cool-gray': '#eef0f3',
+            'dark-card': '#282b31',
+            'muted-blue': '#5b616e',
+            'border-muted': 'rgba(91,97,110,0.2)',
+          },
+          borderRadius: {
+            'pill': '56px',
+            'xl': '16px',
+            '2xl': '24px',
+          },
+          fontFamily: {
+            sans: ['-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue','Helvetica','Arial','sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .sidebar-item:hover { background: rgba(0,82,255,0.06); }
+    .sidebar-item.active { background: rgba(0,82,255,0.1); color: #0052ff; border-right: 3px solid #0052ff; }
+    .metric-card { border: 1px solid rgba(91,97,110,0.2); border-radius: 16px; }
+    .chart-bar { transition: all 0.3s ease; }
+    .chart-bar:hover { opacity: 0.8; }
+    .tooltip { opacity: 0; visibility: hidden; transition: all 0.2s; }
+    .tooltip-trigger:hover .tooltip { opacity: 1; visibility: visible; }
+    .toast { transform: translateY(-100%); opacity: 0; transition: all 0.3s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active { background: #0052ff; color: white; }
+    .tab-btn:not(.active):hover { background: rgba(0,82,255,0.06); }
+    .drill-row { cursor: pointer; transition: background 0.15s; }
+    .drill-row:hover { background: rgba(0,82,255,0.04); }
+    th { font-weight: 600; }
+    .donut-chart { width: 160px; height: 160px; border-radius: 50%; background: conic-gradient(#22c55e 0deg 315deg, #f87171 315deg 360deg); position: relative; }
+    .donut-chart::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 100px; height: 100px; background: white; border-radius: 50%; }
+  </style>
+</head>
+<body class="bg-white text-near-black font-sans antialiased">
+
+  <!-- Toast -->
+  <div id="toast" class="toast fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-near-black text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3">
+    <i class="ri-check-line text-green-400 text-lg"></i>
+    <span id="toast-msg">导出成功</span>
+  </div>
+
+  <!-- Drill Modal -->
+  <div id="drillModal" class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="text-lg font-semibold text-near-black" id="drillTitle">浙江省 - 详细数据</h3>
+          <p class="text-xs text-muted-blue mt-1">省级运营数据详情</p>
+        </div>
+        <button onclick="closeDrillModal()" class="w-8 h-8 rounded-full hover:bg-cool-gray flex items-center justify-center transition"><i class="ri-close-line text-muted-blue"></i></button>
+      </div>
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-cool-gray/50 rounded-xl p-4 text-center">
+          <div class="text-xl font-bold text-brand">256</div>
+          <div class="text-xs text-muted-blue mt-1">累计参与人数</div>
+        </div>
+        <div class="bg-cool-gray/50 rounded-xl p-4 text-center">
+          <div class="text-xl font-bold text-brand">1,024</div>
+          <div class="text-xs text-muted-blue mt-1">累计答题人次</div>
+        </div>
+        <div class="bg-cool-gray/50 rounded-xl p-4 text-center">
+          <div class="text-xl font-bold text-brand">68%</div>
+          <div class="text-xs text-muted-blue mt-1">平均正确率</div>
+        </div>
+        <div class="bg-cool-gray/50 rounded-xl p-4 text-center">
+          <div class="text-xl font-bold text-brand">3</div>
+          <div class="text-xs text-muted-blue mt-1">最近赛事数</div>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button onclick="closeDrillModal()" class="px-5 py-2.5 rounded-pill border border-border-muted text-near-black font-semibold text-sm hover:bg-cool-gray transition">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-border-muted flex flex-col flex-shrink-0">
+      <div class="h-16 flex items-center px-6 border-b border-border-muted">
+        <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center mr-3">
+          <i class="ri-shield-check-line text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-near-black leading-tight">竞赛SaaS平台</h1>
+          <p class="text-xs text-muted-blue">后台管理系统</p>
+        </div>
+      </div>
+      <nav class="flex-1 overflow-y-auto py-3">
+        <div class="px-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">数据统计</div>
+        <a href="#" class="sidebar-item active flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm font-semibold transition"><i class="ri-bar-chart-box-line text-lg"></i><span>数据看板</span></a>
+        <div class="px-4 mt-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">竞赛管理</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-trophy-line text-lg"></i><span>赛事管理</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-questionnaire-line text-lg"></i><span>题库中台</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-gamepad-line text-lg"></i><span>练习赛配置</span></a>
+        <div class="px-4 mt-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">用户中心</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-user-settings-line text-lg"></i><span>用户管理</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-exchange-line text-lg"></i><span>学习联动</span></a>
+        <div class="px-4 mt-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">平台管理</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-building-line text-lg"></i><span>租户管理</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-settings-3-line text-lg"></i><span>系统管理</span></a>
+      </nav>
+      <div class="p-4 border-t border-border-muted">
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-9 h-9 rounded-full bg-cool-gray flex items-center justify-center"><i class="ri-user-line text-muted-blue"></i></div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-near-black truncate">平台运营人员</p>
+            <p class="text-xs text-muted-blue truncate">运营部</p>
+          </div>
+          <button class="text-muted-blue hover:text-near-black transition"><i class="ri-logout-box-r-line"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col min-w-0 bg-cool-gray/30">
+      <header class="h-16 bg-white border-b border-border-muted flex items-center justify-between px-8 flex-shrink-0">
+        <div class="flex items-center gap-2 text-sm">
+          <a href="#" class="text-muted-blue hover:text-brand transition">首页</a>
+          <i class="ri-arrow-right-s-line text-muted-blue"></i>
+          <a href="#" class="text-muted-blue hover:text-brand transition">数据统计</a>
+          <i class="ri-arrow-right-s-line text-muted-blue"></i>
+          <span class="text-near-black font-semibold">平台运营数据</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <button onclick="exportData()" class="px-4 py-2 rounded-pill border border-border-muted text-near-black font-semibold text-sm hover:bg-cool-gray transition flex items-center gap-2">
+            <i class="ri-download-line"></i>导出数据
+          </button>
+          <button class="w-9 h-9 rounded-full hover:bg-cool-gray flex items-center justify-center transition relative">
+            <i class="ri-notification-3-line text-muted-blue"></i>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto p-8">
+        <!-- Title -->
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold text-near-black mb-2">平台运营数据</h1>
+          <p class="text-sm text-muted-blue">全平台租户运营概况与省级横向对比</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-border-muted p-4 mb-6 flex items-center gap-4 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-muted-blue">时间范围</span>
+            <div class="flex bg-cool-gray/50 rounded-lg p-0.5">
+              <button class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-near-black">近7天</button>
+              <button class="tab-btn active px-3 py-1.5 text-xs font-semibold rounded-md">近30天</button>
+              <button class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-near-black">自定义</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Core Metrics -->
+        <div class="grid grid-cols-5 gap-4 mb-6">
+          <div class="metric-card bg-white p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-muted-blue">累计租户数</span>
+              <span class="tooltip-trigger relative">
+                <i class="ri-information-line text-muted-blue cursor-help text-xs"></i>
+                <div class="tooltip absolute bottom-full right-0 mb-2 w-56 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                  平台累计开通的租户数量
+                  <div class="absolute top-full right-3 border-4 border-transparent border-t-near-black"></div>
+                </div>
+              </span>
+            </div>
+            <div class="text-3xl font-bold text-near-black">32</div>
+            <div class="text-xs text-muted-blue mt-2">个省级租户</div>
+          </div>
+          <div class="metric-card bg-white p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-muted-blue">已上线租户数</span>
+              <span class="tooltip-trigger relative">
+                <i class="ri-information-line text-muted-blue cursor-help text-xs"></i>
+                <div class="tooltip absolute bottom-full right-0 mb-2 w-56 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                  正常提供服务的租户数量
+                  <div class="absolute top-full right-3 border-4 border-transparent border-t-near-black"></div>
+                </div>
+              </span>
+            </div>
+            <div class="text-3xl font-bold text-green-600">28</div>
+            <div class="flex items-center gap-1 text-xs mt-2">
+              <span class="text-green-500 font-semibold">87.5%</span>
+              <span class="text-muted-blue">上线率</span>
+            </div>
+          </div>
+          <div class="metric-card bg-white p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-muted-blue">活跃租户数</span>
+              <span class="tooltip-trigger relative">
+                <i class="ri-information-line text-muted-blue cursor-help text-xs"></i>
+                <div class="tooltip absolute bottom-full right-0 mb-2 w-56 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                  最近30天内有练习或赛事数据的租户数量
+                  <div class="absolute top-full right-3 border-4 border-transparent border-t-near-black"></div>
+                </div>
+              </span>
+            </div>
+            <div class="text-3xl font-bold text-brand">26</div>
+            <div class="flex items-center gap-1 text-xs mt-2">
+              <span class="text-green-500 font-semibold">92.9%</span>
+              <span class="text-muted-blue">活跃率</span>
+            </div>
+          </div>
+          <div class="metric-card bg-white p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-muted-blue">平台累计参与人数</span>
+              <span class="tooltip-trigger relative">
+                <i class="ri-information-line text-muted-blue cursor-help text-xs"></i>
+                <div class="tooltip absolute bottom-full right-0 mb-2 w-56 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                  全平台累计去重参与练习或竞赛的用户数
+                  <div class="absolute top-full right-3 border-4 border-transparent border-t-near-black"></div>
+                </div>
+              </span>
+            </div>
+            <div class="text-3xl font-bold text-near-black">386,520</div>
+            <div class="flex items-center gap-1 text-xs mt-2">
+              <i class="ri-arrow-up-line text-green-500"></i>
+              <span class="text-green-500 font-semibold">15.2%</span>
+              <span class="text-muted-blue">环比</span>
+            </div>
+          </div>
+          <div class="metric-card bg-white p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-muted-blue">平台累计答题人次</span>
+              <span class="tooltip-trigger relative">
+                <i class="ri-information-line text-muted-blue cursor-help text-xs"></i>
+                <div class="tooltip absolute bottom-full right-0 mb-2 w-56 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                  全平台累计练习和竞赛答题总次数
+                  <div class="absolute top-full right-3 border-4 border-transparent border-t-near-black"></div>
+                </div>
+              </span>
+            </div>
+            <div class="text-3xl font-bold text-near-black">1,542,080</div>
+            <div class="flex items-center gap-1 text-xs mt-2">
+              <i class="ri-arrow-up-line text-green-500"></i>
+              <span class="text-green-500 font-semibold">22.8%</span>
+              <span class="text-muted-blue">环比</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <!-- Donut Chart -->
+          <div class="metric-card bg-white p-5">
+            <h3 class="text-sm font-semibold text-near-black mb-4">租户开通状态分布</h3>
+            <div class="flex items-center">
+              <div class="flex-1 flex items-center justify-center py-4">
+                <div class="donut-chart"></div>
+              </div>
+              <div class="w-48 space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                  <span class="text-xs text-muted-blue">已上线</span>
+                  <span class="text-xs text-near-black font-semibold ml-auto">28 (87.5%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                  <span class="text-xs text-muted-blue">已停用</span>
+                  <span class="text-xs text-near-black font-semibold ml-auto">4 (12.5%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trend Chart -->
+          <div class="metric-card bg-white p-5">
+            <h3 class="text-sm font-semibold text-near-black mb-4">租户开通趋势</h3>
+            <div class="h-48 flex items-end gap-3 px-2">
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/20 rounded-t" style="height: 25%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2024.01</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/20 rounded-t" style="height: 35%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2024.04</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/30 rounded-t" style="height: 45%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2024.07</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/40 rounded-t" style="height: 55%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2024.10</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/50 rounded-t" style="height: 65%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2025.01</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/60 rounded-t" style="height: 72%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2025.04</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/70 rounded-t" style="height: 80%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2025.07</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand/80 rounded-t" style="height: 88%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2025.10</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand rounded-t" style="height: 95%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2026.01</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex items-end h-40">
+                  <div class="w-full bg-brand rounded-t" style="height: 100%"></div>
+                </div>
+                <span class="text-xs text-muted-blue">2026.04</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Province Comparison Table -->
+        <div class="metric-card bg-white p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-near-black">省级横向对比</h3>
+            <span class="text-xs text-muted-blue">点击省份可查看详细数据</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-border-muted">
+                  <th class="text-left py-3 px-4 text-muted-blue font-semibold w-16">排名</th>
+                  <th class="text-left py-3 px-4 text-muted-blue font-semibold">省份</th>
+                  <th class="text-center py-3 px-4 text-muted-blue font-semibold">租户状态</th>
+                  <th class="text-right py-3 px-4 text-muted-blue font-semibold">累计参与人数</th>
+                  <th class="text-right py-3 px-4 text-muted-blue font-semibold">累计答题人次</th>
+                  <th class="text-right py-3 px-4 text-muted-blue font-semibold">平均正确率</th>
+                  <th class="text-right py-3 px-4 text-muted-blue font-semibold">最近赛事数</th>
+                  <th class="text-center py-3 px-4 text-muted-blue font-semibold w-24">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="drill-row border-b border-border-muted/50" onclick="drillDown('浙江省')">
+                  <td class="py-3 px-4"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white text-xs font-bold">1</span></td>
+                  <td class="py-3 px-4 font-medium text-near-black flex items-center gap-1"><span>浙江省</span><i class="ri-arrow-right-s-line text-brand text-xs"></i></td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-600 text-xs font-semibold rounded-md">已上线</span></td>
+                  <td class="py-3 px-4 text-right">12,458</td>
+                  <td class="py-3 px-4 text-right">48,732</td>
+                  <td class="py-3 px-4 text-right"><span class="text-green-600 font-medium">68.5%</span></td>
+                  <td class="py-3 px-4 text-right">3</td>
+                  <td class="py-3 px-4 text-center"><button class="text-brand text-xs font-semibold hover:underline">详情</button></td>
+                </tr>
+                <tr class="drill-row border-b border-border-muted/50" onclick="drillDown('江苏省')">
+                  <td class="py-3 px-4"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand/80 text-white text-xs font-bold">2</span></td>
+                  <td class="py-3 px-4 font-medium text-near-black flex items-center gap-1"><span>江苏省</span><i class="ri-arrow-right-s-line text-brand text-xs"></i></td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-600 text-xs font-semibold rounded-md">已上线</span></td>
+                  <td class="py-3 px-4 text-right">11,234</td>
+                  <td class="py-3 px-4 text-right">45,102</td>
+                  <td class="py-3 px-4 text-right"><span class="text-green-600 font-medium">66.2%</span></td>
+                  <td class="py-3 px-4 text-right">2</td>
+                  <td class="py-3 px-4 text-center"><button class="text-brand text-xs font-semibold hover:underline">详情</button></td>
+                </tr>
+                <tr class="drill-row border-b border-border-muted/50" onclick="drillDown('广东省')">
+                  <td class="py-3 px-4"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand/60 text-white text-xs font-bold">3</span></td>
+                  <td class="py-3 px-4 font-medium text-near-black flex items-center gap-1"><span>广东省</span><i class="ri-arrow-right-s-line text-brand text-xs"></i></td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-600 text-xs font-semibold rounded-md">已上线</span></td>
+                  <td class="py-3 px-4 text-right">10,876</td>
+                  <td class="py-3 px-4 text-right">42,890</td>
+                  <td class="py-3 px-4 text-right"><span class="text-yellow-600 font-medium">62.8%</span></td>
+                  <td class="py-3 px-4 text-right">2</td>
+                  <td class="py-3 px-4 text-center"><button class="text-brand text-xs font-semibold hover:underline">详情</button></td>
+                </tr>
+                <tr class="drill-row border-b border-border-muted/50" onclick="drillDown('山东省')">
+                  <td class="py-3 px-4"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-300 text-white text-xs font-bold">4</span></td>
+                  <td class="py-3 px-4 font-medium text-near-black flex items-center gap-1"><span>山东省</span><i class="ri-arrow-right-s-line text-brand text-xs"></i></td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-600 text-xs font-semibold rounded-md">已上线</span></td>
+                  <td class="py-3 px-4 text-right">9,654</td>
+                  <td class="py-3 px-4 text-right">38,456</td>
+                  <td class="py-3 px-4 text-right"><span class="text-green-600 font-medium">65.1%</span></td>
+                  <td class="py-3 px-4 text-right">2</td>
+                  <td class="py-3 px-4 text-center"><button class="text-brand text-xs font-semibold hover:underline">详情</button></td>
+                </tr>
+                <tr class="drill-row border-b border-border-muted/50" onclick="drillDown('四川省')">
+                  <td class="py-3 px-4"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-300 text-white text-xs font-bold">5</span></td>
+                  <td class="py-3 px-4 font-medium text-near-black flex items-center gap-1"><span>四川省</span><i class="ri-arrow-right-s-line text-brand text-xs"></i></td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-green-50 text-green-600 text-xs font-semibold rounded-md">已上线</span></td>
+                  <td class="py-3 px-4 text-right">8,432</td>
+                  <td class="py-3 px-4 text-right">34,210</td>
+                  <td class="py-3 px-4 text-right"><span class="text-yellow-600 font-medium">60.5%</span></td>
+                  <td class="py-3 px-4 text-right">1</td>
+                  <td class="py-3 px-4 text-center"><button class="text-brand text-xs font-semibold hover:underline">详情</button></td>
+                </tr>
+                <tr class="drill-row" onclick="drillDown('河南省')">
+                  <td class="py-3 px-4"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-300 text-white text-xs font-bold">6</span></td>
+                  <td class="py-3 px-4 font-medium text-near-black flex items-center gap-1"><span>河南省</span><i class="ri-arrow-right-s-line text-brand text-xs"></i></td>
+                  <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 bg-red-50 text-red-600 text-xs font-semibold rounded-md">已停用</span></td>
+                  <td class="py-3 px-4 text-right">5,120</td>
+                  <td class="py-3 px-4 text-right">22,340</td>
+                  <td class="py-3 px-4 text-right"><span class="text-yellow-600 font-medium">58.3%</span></td>
+                  <td class="py-3 px-4 text-right">1</td>
+                  <td class="py-3 px-4 text-center"><button class="text-brand text-xs font-semibold hover:underline">详情</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-border-muted/50">
+            <span class="text-xs text-muted-blue">共 32 个省级租户</span>
+            <div class="flex items-center gap-1">
+              <button class="w-8 h-8 rounded-lg border border-border-muted flex items-center justify-center text-muted-blue hover:bg-cool-gray transition"><i class="ri-arrow-left-s-line"></i></button>
+              <button class="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center text-xs font-semibold">1</button>
+              <button class="w-8 h-8 rounded-lg border border-border-muted flex items-center justify-center text-muted-blue hover:bg-cool-gray transition text-xs">2</button>
+              <button class="w-8 h-8 rounded-lg border border-border-muted flex items-center justify-center text-muted-blue hover:bg-cool-gray transition text-xs">3</button>
+              <button class="w-8 h-8 rounded-lg border border-border-muted flex items-center justify-center text-muted-blue hover:bg-cool-gray transition"><i class="ri-arrow-right-s-line"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function drillDown(province) {
+      document.getElementById('drillTitle').textContent = province + ' - 详细数据';
+      document.getElementById('drillModal').classList.remove('hidden');
+    }
+    function closeDrillModal() {
+      document.getElementById('drillModal').classList.add('hidden');
+    }
+    function exportData() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+    document.getElementById('drillModal').addEventListener('click', function(e) {
+      if (e.target === this) closeDrillModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDrillModal();
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

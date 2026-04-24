@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习联动配置 - 灾害信息员竞赛SaaS平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#0052ff',
+            'brand-hover': '#578bfa',
+            'near-black': '#0a0b0d',
+            'cool-gray': '#eef0f3',
+            'dark-card': '#282b31',
+            'muted-blue': '#5b616e',
+            'border-muted': 'rgba(91,97,110,0.2)',
+          },
+          borderRadius: {
+            'pill': '56px',
+            'xl': '16px',
+            '2xl': '24px',
+          },
+          fontFamily: {
+            sans: ['-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue','Helvetica','Arial','sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .sidebar-item:hover { background: rgba(0,82,255,0.06); }
+    .sidebar-item.active { background: rgba(0,82,255,0.1); color: #0052ff; border-right: 3px solid #0052ff; }
+    .input-focus:focus { border-color: #0052ff; box-shadow: 0 0 0 3px rgba(0,82,255,0.12); outline: none; }
+    .btn-pill { border-radius: 56px; transition: all 0.2s ease; }
+    .form-card { border: 1px solid rgba(91,97,110,0.2); border-radius: 16px; }
+    .tooltip { opacity: 0; visibility: hidden; transition: all 0.2s; }
+    .tooltip-trigger:hover .tooltip { opacity: 1; visibility: visible; }
+    .toggle-checkbox:checked + .toggle-label { background: #0052ff; }
+    .toggle-checkbox:checked + .toggle-label:before { transform: translateX(20px); }
+    .toast { transform: translateY(-100%); opacity: 0; transition: all 0.3s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.2s; }
+    .modal-overlay.open { opacity: 1; visibility: visible; }
+    .modal-content { transform: scale(0.95); opacity: 0; transition: all 0.2s; }
+    .modal-overlay.open .modal-content { transform: scale(1); opacity: 1; }
+  </style>
+</head>
+<body class="bg-white text-near-black font-sans antialiased">
+
+  <!-- Toast -->
+  <div id="toast" class="toast fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-near-black text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3">
+    <i id="toast-icon" class="ri-check-line text-green-400 text-lg"></i>
+    <span id="toast-msg">保存成功</span>
+  </div>
+
+  <!-- Cancel Confirm Modal -->
+  <div id="cancelModal" class="modal-overlay fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+    <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+          <i class="ri-error-warning-line text-orange-500 text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-near-black mb-1">确认取消？</h3>
+          <p class="text-muted-blue text-sm">当前修改尚未保存，取消后修改内容将丢失。</p>
+        </div>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button onclick="closeCancelModal()" class="px-5 py-2.5 rounded-pill border border-border-muted text-near-black font-semibold text-sm hover:bg-cool-gray transition">继续编辑</button>
+        <button onclick="confirmCancel()" class="px-5 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-hover transition">确认取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Success Modal -->
+  <div id="successModal" class="modal-overlay fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+    <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 text-center">
+      <div class="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
+        <i class="ri-check-line text-green-500 text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-near-black mb-2">保存成功</h3>
+      <p class="text-muted-blue text-sm mb-6">学习联动配置已更新，小程序端将按新规则执行。</p>
+      <button onclick="closeSuccessModal()" class="px-8 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-hover transition">知道了</button>
+    </div>
+  </div>
+
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-border-muted flex flex-col flex-shrink-0">
+      <div class="h-16 flex items-center px-6 border-b border-border-muted">
+        <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center mr-3">
+          <i class="ri-shield-check-line text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-near-black leading-tight">竞赛SaaS平台</h1>
+          <p class="text-xs text-muted-blue">后台管理系统</p>
+        </div>
+      </div>
+      <nav class="flex-1 overflow-y-auto py-3">
+        <div class="px-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">数据统计</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-bar-chart-box-line text-lg"></i><span>数据看板</span></a>
+        <div class="px-4 mt-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">竞赛管理</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-trophy-line text-lg"></i><span>赛事管理</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-questionnaire-line text-lg"></i><span>题库中台</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-gamepad-line text-lg"></i><span>练习赛配置</span></a>
+        <div class="px-4 mt-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">用户中心</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-user-settings-line text-lg"></i><span>用户管理</span></a>
+        <a href="#" class="sidebar-item active flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm font-semibold transition"><i class="ri-exchange-line text-lg"></i><span>学习联动</span></a>
+        <div class="px-4 mt-4 mb-2 text-xs font-semibold text-muted-blue uppercase tracking-wider">平台管理</div>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-building-line text-lg"></i><span>租户管理</span></a>
+        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl text-sm text-muted-blue transition"><i class="ri-settings-3-line text-lg"></i><span>系统管理</span></a>
+      </nav>
+      <div class="p-4 border-t border-border-muted">
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-9 h-9 rounded-full bg-cool-gray flex items-center justify-center"><i class="ri-user-line text-muted-blue"></i></div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-near-black truncate">平台运营人员</p>
+            <p class="text-xs text-muted-blue truncate">运营部</p>
+          </div>
+          <button class="text-muted-blue hover:text-near-black transition"><i class="ri-logout-box-r-line"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col min-w-0 bg-cool-gray/30">
+      <header class="h-16 bg-white border-b border-border-muted flex items-center justify-between px-8 flex-shrink-0">
+        <div class="flex items-center gap-2 text-sm">
+          <a href="#" class="text-muted-blue hover:text-brand transition">首页</a>
+          <i class="ri-arrow-right-s-line text-muted-blue"></i>
+          <a href="#" class="text-muted-blue hover:text-brand transition">用户中心</a>
+          <i class="ri-arrow-right-s-line text-muted-blue"></i>
+          <span class="text-near-black font-semibold">学习联动配置</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <button class="w-9 h-9 rounded-full hover:bg-cool-gray flex items-center justify-center transition relative">
+            <i class="ri-notification-3-line text-muted-blue"></i>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          <button class="w-9 h-9 rounded-full hover:bg-cool-gray flex items-center justify-center transition"><i class="ri-question-line text-muted-blue"></i></button>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto p-8">
+        <!-- Title -->
+        <div class="max-w-3xl mx-auto mb-8">
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-2xl font-bold text-near-black">学习联动配置</h1>
+            <span class="tooltip-trigger relative">
+              <i class="ri-information-line text-muted-blue cursor-help"></i>
+              <div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                <p class="mb-1">学员在本平台练习次数不足时，可跳转至国家级平台观看视频，完成后获得额外练习次数。</p>
+                <p class="text-white/70">国家级平台不可用时，本平台主链路不受影响。</p>
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-near-black"></div>
+              </div>
+            </span>
+          </div>
+          <p class="text-sm text-muted-blue">配置学员看视频得额外练习次数的规则</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="max-w-3xl mx-auto">
+          <div class="form-card bg-white p-8">
+            <form id="configForm" onsubmit="return false;">
+
+              <!-- 联动开关 -->
+              <div class="mb-7">
+                <label class="flex items-center gap-2 text-sm font-semibold text-near-black mb-3">
+                  联动开关
+                  <span class="text-red-500">*</span>
+                  <span class="tooltip-trigger relative">
+                    <i class="ri-question-line text-muted-blue cursor-help text-xs"></i>
+                    <div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                      关闭后小程序端隐藏"看视频得次数"入口，学员无法通过看视频获得额外练习次数
+                      <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-near-black"></div>
+                    </div>
+                  </span>
+                </label>
+                <div class="flex items-center gap-4">
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="linkageSwitch" class="toggle-checkbox sr-only" checked onchange="toggleFields()">
+                    <div class="toggle-label w-11 h-6 bg-gray-200 rounded-full transition-colors duration-200 relative before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-5 before:h-5 before:bg-white before:rounded-full before:shadow before:transition-transform before:duration-200"></div>
+                  </label>
+                  <span id="switchStatus" class="text-sm font-medium text-near-black">已开启</span>
+                </div>
+                <p class="text-xs text-muted-blue mt-2">开启后，学员可在小程序端通过观看视频获得额外练习次数</p>
+              </div>
+
+              <!-- 单次视频奖励次数 -->
+              <div class="mb-7" id="rewardField">
+                <label class="flex items-center gap-2 text-sm font-semibold text-near-black mb-2.5">
+                  单次视频奖励次数
+                  <span class="text-red-500">*</span>
+                  <span class="tooltip-trigger relative">
+                    <i class="ri-question-line text-muted-blue cursor-help text-xs"></i>
+                    <div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                      学员每观看完 1 个视频，可获得的额外练习次数
+                      <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-near-black"></div>
+                    </div>
+                  </span>
+                </label>
+                <div class="flex items-center gap-4">
+                  <input type="number" id="rewardCount" value="1" min="1" max="20"
+                    class="input-focus w-32 h-11 px-4 border border-border-muted rounded-xl text-sm font-semibold text-near-black transition"
+                    oninput="validateRewardCount()">
+                  <span class="text-sm text-muted-blue">次 / 视频</span>
+                </div>
+                <p id="rewardCountError" class="text-red-500 text-xs mt-2 hidden">
+                  <i class="ri-error-warning-line mr-1"></i><span id="rewardCountErrorMsg"></span>
+                </p>
+                <p class="text-xs text-muted-blue mt-2">取值范围：1 ~ 20</p>
+              </div>
+
+              <!-- 每日奖励上限 -->
+              <div class="mb-8" id="limitField">
+                <label class="flex items-center gap-2 text-sm font-semibold text-near-black mb-2.5">
+                  每日奖励上限
+                  <span class="text-red-500">*</span>
+                  <span class="tooltip-trigger relative">
+                    <i class="ri-question-line text-muted-blue cursor-help text-xs"></i>
+                    <div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-near-black text-white text-xs rounded-xl p-3 shadow-lg z-10">
+                      学员每日通过看视频最多可获得的额外练习次数，0 表示不限
+                      <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-near-black"></div>
+                    </div>
+                  </span>
+                </label>
+                <div class="flex items-center gap-4">
+                  <input type="number" id="dailyLimit" value="5" min="0" max="50"
+                    class="input-focus w-32 h-11 px-4 border border-border-muted rounded-xl text-sm font-semibold text-near-black transition"
+                    oninput="validateDailyLimit()">
+                  <span class="text-sm text-muted-blue">次 / 天</span>
+                </div>
+                <p id="dailyLimitError" class="text-red-500 text-xs mt-2 hidden">
+                  <i class="ri-error-warning-line mr-1"></i><span id="dailyLimitErrorMsg"></span>
+                </p>
+                <p class="text-xs text-muted-blue mt-2">取值范围：0 ~ 50，0 表示不限</p>
+              </div>
+
+              <!-- Divider -->
+              <div class="border-t border-border-muted mb-6"></div>
+
+              <!-- Preview -->
+              <div class="bg-cool-gray/50 rounded-xl p-4 mb-8" id="previewCard">
+                <h4 class="text-sm font-semibold text-near-black mb-3 flex items-center gap-2">
+                  <i class="ri-file-list-3-line text-brand"></i>
+                  配置预览
+                </h4>
+                <div class="grid grid-cols-3 gap-4">
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-brand" id="previewReward">1</div>
+                    <div class="text-xs text-muted-blue mt-1">次/视频</div>
+                  </div>
+                  <div class="text-center border-l border-r border-border-muted">
+                    <div class="text-2xl font-bold text-brand" id="previewLimit">5</div>
+                    <div class="text-xs text-muted-blue mt-1">每日上限</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-brand" id="previewMax">5</div>
+                    <div class="text-xs text-muted-blue mt-1">每日最多看视频</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="disabledPreview" class="bg-cool-gray/50 rounded-xl p-6 mb-8 text-center hidden">
+                <i class="ri-forbid-line text-4xl text-muted-blue mb-3 block"></i>
+                <p class="text-sm text-muted-blue">学习联动已关闭，学员无法通过看视频获得额外练习次数</p>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center justify-end gap-3">
+                <button type="button" onclick="handleCancel()" class="px-7 py-2.5 rounded-pill border border-border-muted text-near-black font-semibold text-sm hover:bg-cool-gray transition">取消</button>
+                <button type="button" onclick="handleSave()" class="px-7 py-2.5 rounded-pill bg-brand text-white font-semibold text-sm hover:bg-brand-hover transition flex items-center gap-2" id="saveBtn">
+                  <i class="ri-save-line"></i>保存
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let isLinkageOn = true;
+
+    function toggleFields() {
+      const checkbox = document.getElementById('linkageSwitch');
+      isLinkageOn = checkbox.checked;
+      document.getElementById('switchStatus').textContent = isLinkageOn ? '已开启' : '已关闭';
+      document.getElementById('switchStatus').className = isLinkageOn ? 'text-sm font-medium text-near-black' : 'text-sm font-medium text-muted-blue';
+
+      const rewardField = document.getElementById('rewardField');
+      const limitField = document.getElementById('limitField');
+      const previewCard = document.getElementById('previewCard');
+      const disabledPreview = document.getElementById('disabledPreview');
+
+      if (isLinkageOn) {
+        rewardField.style.opacity = '1';
+        rewardField.style.pointerEvents = 'auto';
+        limitField.style.opacity = '1';
+        limitField.style.pointerEvents = 'auto';
+        previewCard.classList.remove('hidden');
+        disabledPreview.classList.add('hidden');
+      } else {
+        rewardField.style.opacity = '0.5';
+        rewardField.style.pointerEvents = 'none';
+        limitField.style.opacity = '0.5';
+        limitField.style.pointerEvents = 'none';
+        previewCard.classList.add('hidden');
+        disabledPreview.classList.remove('hidden');
+      }
+    }
+
+    function validateRewardCount() {
+      const input = document.getElementById('rewardCount');
+      const error = document.getElementById('rewardCountError');
+      const errorMsg = document.getElementById('rewardCountErrorMsg');
+      const val = parseInt(input.value);
+      const preview = document.getElementById('previewReward');
+      const previewMax = document.getElementById('previewMax');
+
+      preview.textContent = isNaN(val) ? '--' : val;
+      const limitVal = parseInt(document.getElementById('dailyLimit').value) || 0;
+      if (limitVal > 0 && val > 0) {
+        previewMax.textContent = Math.ceil(limitVal / val);
+      } else {
+        previewMax.textContent = '∞';
+      }
+
+      if (!input.value || isNaN(val)) { error.classList.add('hidden'); return false; }
+      if (val < 1 || val > 20) { errorMsg.textContent = '单次视频奖励次数必须在 1 ~ 20 之间'; error.classList.remove('hidden'); return false; }
+      error.classList.add('hidden');
+      return true;
+    }
+
+    function validateDailyLimit() {
+      const input = document.getElementById('dailyLimit');
+      const error = document.getElementById('dailyLimitError');
+      const errorMsg = document.getElementById('dailyLimitErrorMsg');
+      const val = parseInt(input.value);
+      const preview = document.getElementById('previewLimit');
+      const previewMax = document.getElementById('previewMax');
+
+      preview.textContent = isNaN(val) ? '--' : val;
+      const rewardVal = parseInt(document.getElementById('rewardCount').value) || 1;
+      if (val > 0) {
+        previewMax.textContent = Math.ceil(val / rewardVal);
+      } else {
+        previewMax.textContent = '∞';
+      }
+
+      if (!input.value || isNaN(val)) { error.classList.add('hidden'); return false; }
+      if (val < 0 || val > 50) { errorMsg.textContent = '每日奖励上限必须在 0 ~ 50 之间'; error.classList.remove('hidden'); return false; }
+      error.classList.add('hidden');
+      return true;
+    }
+
+    function handleSave() {
+      if (!isLinkageOn) {
+        openSuccessModal();
+        return;
+      }
+      const rValid = validateRewardCount();
+      const lValid = validateDailyLimit();
+      if (!rValid || !lValid) { showToast('请检查表单填写是否正确', 'error'); return; }
+
+      const btn = document.getElementById('saveBtn');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i> 保存中...';
+      btn.disabled = true;
+      setTimeout(() => { btn.innerHTML = original; btn.disabled = false; openSuccessModal(); }, 800);
+    }
+
+    function handleCancel() {
+      const switchOn = document.getElementById('linkageSwitch').checked;
+      const rCount = document.getElementById('rewardCount').value;
+      const dLimit = document.getElementById('dailyLimit').value;
+      if (switchOn !== true || rCount !== '1' || dLimit !== '5') {
+        openCancelModal();
+      } else {
+        showToast('未做修改，无需保存', 'info');
+      }
+    }
+
+    function confirmCancel() {
+      closeCancelModal();
+      document.getElementById('linkageSwitch').checked = true;
+      toggleFields();
+      document.getElementById('rewardCount').value = '1';
+      document.getElementById('dailyLimit').value = '5';
+      validateRewardCount();
+      validateDailyLimit();
+      showToast('已取消修改', 'info');
+    }
+
+    function showToast(msg, type) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').className = type === 'error' ? 'ri-close-circle-line text-red-400 text-lg' : type === 'info' ? 'ri-information-line text-blue-400 text-lg' : 'ri-check-line text-green-400 text-lg';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function openCancelModal() { document.getElementById('cancelModal').classList.add('open'); }
+    function closeCancelModal() { document.getElementById('cancelModal').classList.remove('open'); }
+    function openSuccessModal() { document.getElementById('successModal').classList.add('open'); }
+    function closeSuccessModal() { document.getElementById('successModal').classList.remove('open'); }
+
+    document.getElementById('cancelModal').addEventListener('click', function(e) { if (e.target === this) closeCancelModal(); });
+    document.getElementById('successModal').addEventListener('click', function(e) { if (e.target === this) closeSuccessModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeCancelModal(); closeSuccessModal(); } });
+  </script>
+</body>
+</html>
