@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>练习首页原型</title>
+  <style>
+    :root {
+      --brand-blue: #1677FF;
+      --brand-blue-2: #36A4FF;
+      --brand-orange: #FF8F1F;
+      --brand-orange-2: #FFBA3B;
+      --success: #00B578;
+      --danger: #F53F3F;
+      --warning: #F7BA1E;
+      --bg: #F5F7FA;
+      --surface: #FFFFFF;
+      --surface-muted: #F2F3F5;
+      --border: #E5E6EB;
+      --text: #1D2129;
+      --text-secondary: #4E5969;
+      --text-muted: #86909C;
+      --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-float: 0 10px 32px rgba(0, 25, 84, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 999px;
+      --font-stack: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: var(--font-stack);
+      background:
+        radial-gradient(circle at top left, rgba(22, 119, 255, 0.12), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(255, 143, 31, 0.1), transparent 24%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      padding: 28px 20px 40px;
+      overflow-x: hidden;
+    }
+
+    .prototype-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .prototype-header {
+      width: min(1200px, 100%);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .header-copy h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.25;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .header-copy p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .state-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .toolbar-chip {
+      border: 1px solid rgba(22, 119, 255, 0.18);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--brand-blue);
+      border-radius: var(--radius-pill);
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 180ms ease;
+      box-shadow: 0 2px 10px rgba(22, 119, 255, 0.08);
+    }
+
+    .toolbar-chip.active,
+    .toolbar-chip:hover {
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-2));
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .prototype-stage {
+      width: min(1200px, 100%);
+      display: grid;
+      grid-template-columns: minmax(360px, 420px) minmax(320px, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .phone-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone {
+      width: 390px;
+      min-height: 844px;
+      background: #fff;
+      border-radius: 38px;
+      padding: 14px;
+      box-shadow:
+        0 40px 80px rgba(10, 27, 68, 0.16),
+        0 0 0 1px rgba(255, 255, 255, 0.88);
+      position: relative;
+    }
+
+    .phone-screen {
+      background: linear-gradient(180deg, #F6F9FF 0%, #EFF4FB 34%, #F5F7FA 100%);
+      border-radius: 28px;
+      min-height: 816px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status-bar {
+      height: 52px;
+      padding: 12px 18px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      opacity: 0.9;
+      font-size: 12px;
+    }
+
+    .status-pill {
+      width: 18px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--text);
+      opacity: 0.15;
+    }
+
+    .page-body {
+      flex: 1;
+      padding: 12px 16px calc(96px + var(--safe-bottom));
+      overflow-y: auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+    }
+
+    .hero-card {
+      padding: 18px 18px 0;
+      overflow: hidden;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .hero-title {
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .hero-detail-link {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .hero-count-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    .hero-count {
+      font-size: 56px;
+      line-height: 0.95;
+      font-weight: 400;
+      letter-spacing: -1.8px;
+      color: var(--text);
+    }
+
+    .hero-unit {
+      font-size: 20px;
+      color: var(--text-secondary);
+      padding-bottom: 8px;
+    }
+
+    .count-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mini-stat {
+      background: var(--surface-muted);
+      border-radius: 10px;
+      padding: 12px 14px;
+      min-height: 74px;
+    }
+
+    .mini-stat .label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .mini-stat .value {
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .mini-stat .unit {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-left: 4px;
+      font-weight: 500;
+    }
+
+    .cta-wrap {
+      padding: 16px 0 18px;
+    }
+
+    .primary-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-2));
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 14px 28px rgba(22, 119, 255, 0.22);
+      transition: transform 180ms ease, opacity 180ms ease;
+    }
+
+    .primary-btn:active {
+      transform: scale(0.99);
+    }
+
+    .primary-btn.is-disabled {
+      background: #C9D5E6;
+      box-shadow: none;
+      color: rgba(29, 33, 41, 0.75);
+      cursor: not-allowed;
+    }
+
+    .empty-tip {
+      display: none;
+      padding: 14px 0 18px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--brand-orange);
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .empty-tip.active {
+      display: flex;
+    }
+
+    .empty-tip a {
+      color: var(--brand-blue);
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .records-card {
+      margin-top: 14px;
+      padding-top: 10px;
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(229, 230, 235, 0.92);
+      position: relative;
+    }
+
+    .tab-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 14px 0 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tab-btn.active {
+      color: var(--text);
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -1px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--brand-blue);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .list {
+      padding: 2px 0;
+    }
+
+    .list-item {
+      padding: 18px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(229, 230, 235, 0.85);
+      align-items: center;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .item-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .item-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .item-badge {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--brand-blue);
+      white-space: nowrap;
+    }
+
+    .item-badge.record {
+      font-size: 28px;
+      letter-spacing: -0.6px;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(74px + var(--safe-bottom));
+      background: rgba(255, 255, 255, 0.94);
+      border-top: 1px solid rgba(229, 230, 235, 0.88);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 8px 10px calc(8px + var(--safe-bottom));
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .nav-item.active {
+      color: var(--brand-blue);
+    }
+
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      color: inherit;
+    }
+
+    .nav-item.active .nav-icon {
+      background: rgba(22, 119, 255, 0.08);
+    }
+
+    .prototype-notes {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(22, 119, 255, 0.08);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(10, 27, 68, 0.08);
+      padding: 24px;
+      min-height: 620px;
+      position: relative;
+    }
+
+    .prototype-notes h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      line-height: 1.3;
+    }
+
+    .prototype-notes p {
+      margin: 0 0 16px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .note-card {
+      background: #fff;
+      border: 1px solid rgba(229, 230, 235, 0.9);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .note-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .note-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .note-card li + li {
+      margin-top: 4px;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid rgba(22, 119, 255, 0.12);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+    }
+
+    .spec-fab {
+      position: fixed;
+      top: 118px;
+      right: 28px;
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-2));
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+      box-shadow: 0 18px 36px rgba(255, 143, 31, 0.28);
+      cursor: grab;
+      z-index: 1200;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 8px;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .spec-fab:active {
+      cursor: grabbing;
+    }
+
+    .spec-panel {
+      position: fixed;
+      inset: 0 0 0 auto;
+      width: min(460px, 100vw);
+      background: rgba(255, 255, 255, 0.96);
+      border-left: 1px solid rgba(229, 230, 235, 0.9);
+      box-shadow: -24px 0 48px rgba(10, 27, 68, 0.12);
+      transform: translateX(100%);
+      transition: transform 240ms ease;
+      z-index: 1100;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(18px);
+    }
+
+    .spec-panel.open {
+      transform: translateX(0);
+    }
+
+    .spec-panel-header {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid rgba(229, 230, 235, 0.9);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .spec-panel-header h2 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      line-height: 1.3;
+    }
+
+    .spec-panel-header p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    .close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(229, 230, 235, 1);
+      background: #fff;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .spec-panel-body {
+      padding: 18px 22px 28px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .rule-section {
+      background: #fff;
+      border: 1px solid rgba(229, 230, 235, 0.96);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .rule-section h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .rule-section ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .rule-section li + li {
+      margin-top: 5px;
+    }
+
+    .sheet-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 16, 31, 0.34);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+      z-index: 900;
+    }
+
+    .sheet-mask.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 86px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 22px;
+      box-shadow: 0 24px 48px rgba(10, 27, 68, 0.22);
+      padding: 18px;
+      z-index: 980;
+      display: none;
+    }
+
+    .sheet.active {
+      display: block;
+    }
+
+    .sheet-handle {
+      width: 44px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(134, 144, 156, 0.4);
+      margin: 0 auto 16px;
+    }
+
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 14px;
+    }
+
+    .sheet-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sheet-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface-muted);
+      border-radius: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .sheet-row strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .sheet-action {
+      width: 100%;
+      margin-top: 16px;
+      height: 44px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, var(--brand-orange), var(--brand-orange-2));
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 34px;
+      transform: translateX(-50%) translateY(18px);
+      background: rgba(29, 33, 41, 0.88);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: var(--shadow-float);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 1300;
+      max-width: calc(100vw - 32px);
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 1080px) {
+      .prototype-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .prototype-notes {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 18px 10px 28px;
+      }
+
+      .phone {
+        width: 100%;
+        max-width: 390px;
+      }
+
+      .notes-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .spec-fab {
+        top: auto;
+        right: 16px;
+        bottom: 94px;
+        width: 64px;
+        height: 64px;
+        font-size: 13px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto;
+      }
+
+      .toolbar-chip,
+      .primary-btn,
+      .spec-panel,
+      .sheet-mask,
+      .toast {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="prototype-shell">
+    <div class="prototype-header">
+      <div class="header-copy">
+        <h1>小程序原型 01：练习首页</h1>
+        <p>基于《DESIGN-小程序设计规范》输出的首个可交互原型。当前页覆盖练习首页主状态、次数用尽状态、错题本与练习记录切换，并内置可拖动的规则说明按钮。</p>
+      </div>
+
+      <div class="state-toolbar" aria-label="页面状态切换">
+        <button class="toolbar-chip active" data-state="available">有剩余次数</button>
+        <button class="toolbar-chip" data-state="exhausted">次数已用尽</button>
+        <button class="toolbar-chip" data-state="records">练习记录视图</button>
+      </div>
+    </div>
+
+    <div class="prototype-stage">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="status-bar">
+              <div>12:00</div>
+              <div class="status-icons" aria-hidden="true">
+                <span>▮▮▮</span>
+                <span>◔</span>
+                <span class="status-pill"></span>
+              </div>
+            </div>
+
+            <div class="page-body">
+              <section class="card hero-card">
+                <div class="hero-top">
+                  <div class="hero-title">今日剩余练习次数</div>
+                  <button class="hero-detail-link" id="openTimesDetail">练习次数明细 &gt;</button>
+                </div>
+
+                <div class="hero-count-row">
+                  <div class="hero-count" id="remainingCount">3</div>
+                  <div class="hero-unit">次</div>
+                </div>
+
+                <div class="count-grid">
+                  <div class="mini-stat">
+                    <div class="label">基础次数</div>
+                    <div><span class="value" id="baseCount">2</span><span class="unit">次</span></div>
+                  </div>
+                  <div class="mini-stat">
+                    <div class="label">奖励次数</div>
+                    <div><span class="value" id="rewardCount">1</span><span class="unit">次</span></div>
+                  </div>
+                </div>
+
+                <div class="cta-wrap">
+                  <button class="primary-btn" id="startPractice">开始练习</button>
+                  <div class="empty-tip" id="emptyTip">
+                    <span>今日练习次数已用尽，前往国家培训平台学习课程，即可获得更多练习机会</span>
+                    <a href="javascript:void(0)" id="openRewardSheet">获取练习次数 &gt;</a>
+                  </div>
+                </div>
+              </section>
+
+              <section class="card records-card">
+                <div class="tabs">
+                  <button class="tab-btn active" data-tab="mistakes">错题本</button>
+                  <button class="tab-btn" data-tab="records">练习记录</button>
+                </div>
+
+                <div class="tab-panel active" data-panel="mistakes">
+                  <div class="list">
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">房屋受灾情况解读</div>
+                        <div class="item-meta">2026-04-26 18:00</div>
+                      </div>
+                      <div class="item-badge">+1</div>
+                    </div>
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">灾情报送时间要求</div>
+                        <div class="item-meta">2026-04-25 21:40</div>
+                      </div>
+                      <div class="item-badge">+3</div>
+                    </div>
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">基层灾情核查流程</div>
+                        <div class="item-meta">2026-04-25 16:15</div>
+                      </div>
+                      <div class="item-badge">+2</div>
+                    </div>
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">救灾救助信息填报</div>
+                        <div class="item-meta">2026-04-24 10:08</div>
+                      </div>
+                      <div class="item-badge">+1</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tab-panel" data-panel="records">
+                  <div class="list">
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">2026-04-26 18:00</div>
+                        <div class="item-meta">本次练习共 20 题，答题时长 06:12</div>
+                      </div>
+                      <div class="item-badge record">18/20</div>
+                    </div>
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">2026-04-26 09:15</div>
+                        <div class="item-meta">本次练习共 10 题，答题时长 03:47</div>
+                      </div>
+                      <div class="item-badge record">8/10</div>
+                    </div>
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">2026-04-25 19:42</div>
+                        <div class="item-meta">本次练习共 20 题，答题时长 07:01</div>
+                      </div>
+                      <div class="item-badge record">15/20</div>
+                    </div>
+                    <div class="list-item">
+                      <div>
+                        <div class="item-title">2026-04-25 08:26</div>
+                        <div class="item-meta">本次练习共 5 题，答题时长 01:58</div>
+                      </div>
+                      <div class="item-badge record">3/5</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <nav class="bottom-nav" aria-label="底部主导航">
+              <div class="nav-item active">
+                <div class="nav-icon">⌂</div>
+                <div>练习</div>
+              </div>
+              <div class="nav-item">
+                <div class="nav-icon">🏆</div>
+                <div>竞赛</div>
+              </div>
+              <div class="nav-item">
+                <div class="nav-icon">◦</div>
+                <div>我的</div>
+              </div>
+            </nav>
+
+            <div class="sheet" id="timesSheet" aria-hidden="true">
+              <div class="sheet-handle"></div>
+              <h3 class="sheet-title">练习次数明细</h3>
+              <div class="sheet-list">
+                <div class="sheet-row"><span>今日基础次数发放</span><strong>+2 次</strong></div>
+                <div class="sheet-row"><span>完成“灾情报送规范”课程</span><strong>+1 次</strong></div>
+                <div class="sheet-row"><span>练习消耗</span><strong>-1 次</strong></div>
+                <div class="sheet-row"><span>练习消耗</span><strong>-1 次</strong></div>
+              </div>
+              <button class="sheet-action" id="closeTimesSheet">知道了</button>
+            </div>
+
+            <div class="sheet" id="rewardSheet" aria-hidden="true">
+              <div class="sheet-handle"></div>
+              <h3 class="sheet-title">获取更多练习次数</h3>
+              <div class="sheet-list">
+                <div class="sheet-row"><span>规则 1</span><strong>完成 1 个课程，奖励 1 次</strong></div>
+                <div class="sheet-row"><span>规则 2</span><strong>累计学习 60 分钟，奖励 1 次</strong></div>
+                <div class="sheet-row"><span>说明</span><strong>奖励次数到账后立即刷新首页</strong></div>
+              </div>
+              <button class="sheet-action" id="goTraining">前往国家培训平台</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="prototype-notes">
+        <h2>当前页面说明</h2>
+        <p>这是小程序端 `练习首页` 的第一版高保真原型。视觉上遵循蓝白主调、白色圆角卡片、16px 统一内容边距和 48px 主操作按钮；交互上覆盖了练习入口、次数状态、Tab 切换、次数明细弹层与获取练习次数引导。</p>
+
+        <div class="legend-row">
+          <div class="legend-chip"><span class="legend-dot" style="background:#1677FF"></span>主操作 / 当前选中</div>
+          <div class="legend-chip"><span class="legend-dot" style="background:#FF8F1F"></span>激励引导 / 获取次数</div>
+          <div class="legend-chip"><span class="legend-dot" style="background:#00B578"></span>同步到账 / 成功状态</div>
+        </div>
+
+        <div class="notes-grid">
+          <section class="note-card">
+            <h3>页面核心目标</h3>
+            <ul>
+              <li>让用户一眼看懂今天还能不能继续练习。</li>
+              <li>把“基础次数”和“奖励次数”拆开展示，降低口径误解。</li>
+              <li>把错题复盘和练习记录都放在练习页下半区，减少跳转。</li>
+            </ul>
+          </section>
+
+          <section class="note-card">
+            <h3>已做交互</h3>
+            <ul>
+              <li>顶部状态切换可切到“有剩余次数 / 次数已用尽 / 练习记录视图”。</li>
+              <li>点击“练习次数明细”会弹出底部明细层。</li>
+              <li>点击“获取练习次数”会展示培训平台联动规则说明。</li>
+            </ul>
+          </section>
+
+          <section class="note-card">
+            <h3>设计遵循</h3>
+            <ul>
+              <li>主色使用 `#1677FF`，激励用橙色 `#FF8F1F`。</li>
+              <li>首页卡片统一 `16px` 大圆角，按钮高度 `48px`。</li>
+              <li>正文不低于 `14px`，核心数字强化展示。</li>
+            </ul>
+          </section>
+
+          <section class="note-card">
+            <h3>后续延展</h3>
+            <ul>
+              <li>下一页可以继续做“练习次数明细页”单独原型。</li>
+              <li>也可以继续做“错题详情页”或“练习答题页”。</li>
+              <li>当前文件已可作为第一个页面的交付基线。</li>
+            </ul>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <button class="spec-fab" id="specFab" aria-label="查看练习首页规则说明">规则说明</button>
+
+  <aside class="spec-panel" id="specPanel" aria-hidden="true">
+    <div class="spec-panel-header">
+      <div>
+        <h2>练习首页规则说明</h2>
+        <p>这里集中展示当前页面所有功能规则、字段口径、交互细节和异常场景，供产品、设计、研发与测试直接对齐。</p>
+      </div>
+      <button class="close-btn" id="closeSpecPanel" aria-label="关闭规则说明">×</button>
+    </div>
+
+    <div class="spec-panel-body">
+      <section class="rule-section">
+        <h3>1. 页面定位与角色</h3>
+        <ul>
+          <li>页面名称：小程序 `练习` 一级页面。</li>
+          <li>适用角色：所有已同步到竞赛平台的灾害信息员用户。</li>
+          <li>页面目标：承接日常练习入口、展示剩余练习次数、沉淀错题与练习记录，并在次数不足时引导前往国家培训平台获取更多机会。</li>
+          <li>页面访问不受省份开通状态影响，即使正式竞赛关闭，练习页仍可访问。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>2. 核心字段与次数口径</h3>
+        <ul>
+          <li>`今日剩余练习次数 = 基础剩余次数 + 奖励剩余次数`。</li>
+          <li>`基础剩余次数 = 当日配置基础次数 - 当日已消耗基础次数`。</li>
+          <li>`奖励剩余次数 = 当前仍在有效期内的奖励次数总和 - 已消耗奖励次数`。</li>
+          <li>首页大数字只展示“当前还能练习多少次”，不是累计练习次数。</li>
+          <li>`基础次数`和`奖励次数`分别展示剩余值，不展示历史累计发放值。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>3. 顶部信息卡交互</h3>
+        <ul>
+          <li>右上角 `练习次数明细 >` 为独立入口，点击后展示次数流水底部弹层。</li>
+          <li>弹层中至少展示：发放类型、消耗类型、变动值、到账说明。</li>
+          <li>基础次数通常在每日重置时生成一条发放流水。</li>
+          <li>奖励次数在学习联动触发成功后生成发放流水，到期未用完时生成失效流水。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>4. 开始练习按钮规则</h3>
+        <ul>
+          <li>当 `今日剩余练习次数 > 0` 时，按钮可点击。</li>
+          <li>当 `今日剩余练习次数 = 0` 时，按钮置灰不可点击。</li>
+          <li>默认先消耗基础次数，再消耗奖励次数；如后台改配置，则按后台配置执行。</li>
+          <li>点击可练习状态的按钮后，进入练习答题页，不在当前原型内展开。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>5. 次数已用尽状态</h3>
+        <ul>
+          <li>按钮不可用时，页面下方展示橙色引导文案。</li>
+          <li>引导文案需要明确告诉用户：去国家培训平台完成课程数或累计学习时长，可以获得新的奖励练习次数。</li>
+          <li>`获取练习次数 >` 为独立可点击入口，点击后展示规则说明并可跳转外部平台。</li>
+          <li>学习结果未同步到账时，首页不做预发放或预占位展示。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>6. 错题本 Tab 规则</h3>
+        <ul>
+          <li>默认进入页面时，优先显示 `错题本` Tab。</li>
+          <li>每条错题至少展示：题目标题/题干摘要、最近错误时间、累计错误次数。</li>
+          <li>同一题目重复答错时，不新增多张卡片，而是在原题下累计错误次数。</li>
+          <li>列表默认按最近错误时间倒序排列。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>7. 练习记录 Tab 规则</h3>
+        <ul>
+          <li>每完成一次练习，生成一条练习记录。</li>
+          <li>每条记录至少展示：练习时间、答对题数/总题数、答题时长。</li>
+          <li>记录默认按时间倒序排列，最新记录在前。</li>
+          <li>后续可扩展点击单条记录查看某次练习详情。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>8. 异常与边界规则</h3>
+        <ul>
+          <li>未同步到竞赛平台的培训平台用户，不进入本页统计和次数体系。</li>
+          <li>服务到期后，正式竞赛入口可关闭，但练习页继续保留。</li>
+          <li>无错题、无练习记录时，需要提供空状态而不是空白页。</li>
+          <li>页面加载失败时，应给出明确的重试提示，不直接白屏。</li>
+        </ul>
+      </section>
+
+      <section class="rule-section">
+        <h3>9. 当前原型包含的演示能力</h3>
+        <ul>
+          <li>状态切换：有剩余次数、次数已用尽、练习记录视图。</li>
+          <li>Tab 切换：错题本 / 练习记录。</li>
+          <li>弹层演示：练习次数明细、获取更多练习次数。</li>
+          <li>可拖动按钮：右侧悬浮“规则说明”按钮可拖动与点击展开。</li>
+        </ul>
+      </section>
+    </div>
+  </aside>
+
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const pageState = {
+      available: {
+        remaining: 3,
+        base: 2,
+        reward: 1,
+        disabled: false,
+        showEmpty: false,
+        activeTab: "mistakes"
+      },
+      exhausted: {
+        remaining: 0,
+        base: 0,
+        reward: 0,
+        disabled: true,
+        showEmpty: true,
+        activeTab: "mistakes"
+      },
+      records: {
+        remaining: 2,
+        base: 1,
+        reward: 1,
+        disabled: false,
+        showEmpty: false,
+        activeTab: "records"
+      }
+    };
+
+    const remainingCount = document.getElementById("remainingCount");
+    const baseCount = document.getElementById("baseCount");
+    const rewardCount = document.getElementById("rewardCount");
+    const startPractice = document.getElementById("startPractice");
+    const emptyTip = document.getElementById("emptyTip");
+    const toolbarChips = document.querySelectorAll(".toolbar-chip");
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabPanels = document.querySelectorAll(".tab-panel");
+    const openTimesDetail = document.getElementById("openTimesDetail");
+    const openRewardSheet = document.getElementById("openRewardSheet");
+    const timesSheet = document.getElementById("timesSheet");
+    const rewardSheet = document.getElementById("rewardSheet");
+    const closeTimesSheet = document.getElementById("closeTimesSheet");
+    const goTraining = document.getElementById("goTraining");
+    const sheetMask = document.getElementById("sheetMask");
+    const toast = document.getElementById("toast");
+    const specFab = document.getElementById("specFab");
+    const specPanel = document.getElementById("specPanel");
+    const closeSpecPanel = document.getElementById("closeSpecPanel");
+
+    function applyState(stateKey) {
+      const state = pageState[stateKey];
+      remainingCount.textContent = state.remaining;
+      baseCount.textContent = state.base;
+      rewardCount.textContent = state.reward;
+
+      startPractice.classList.toggle("is-disabled", state.disabled);
+      emptyTip.classList.toggle("active", state.showEmpty);
+
+      toolbarChips.forEach((chip) => {
+        chip.classList.toggle("active", chip.dataset.state === stateKey);
+      });
+
+      switchTab(state.activeTab);
+    }
+
+    function switchTab(tabKey) {
+      tabButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tabKey);
+      });
+      tabPanels.forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.panel === tabKey);
+      });
+    }
+
+    function openSheet(sheet) {
+      [timesSheet, rewardSheet].forEach((item) => item.classList.remove("active"));
+      sheet.classList.add("active");
+      sheetMask.classList.add("active");
+    }
+
+    function closeSheets() {
+      [timesSheet, rewardSheet].forEach((item) => item.classList.remove("active"));
+      sheetMask.classList.remove("active");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1800);
+    }
+
+    toolbarChips.forEach((chip) => {
+      chip.addEventListener("click", () => applyState(chip.dataset.state));
+    });
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
+    });
+
+    openTimesDetail.addEventListener("click", () => openSheet(timesSheet));
+    closeTimesSheet.addEventListener("click", closeSheets);
+    openRewardSheet.addEventListener("click", () => openSheet(rewardSheet));
+    goTraining.addEventListener("click", () => {
+      closeSheets();
+      showToast("这里将跳转到国家培训平台");
+    });
+    sheetMask.addEventListener("click", closeSheets);
+
+    startPractice.addEventListener("click", () => {
+      if (startPractice.classList.contains("is-disabled")) return;
+      showToast("这里将进入练习答题页");
+    });
+
+    function toggleSpecPanel(forceOpen) {
+      const willOpen = typeof forceOpen === "boolean" ? forceOpen : !specPanel.classList.contains("open");
+      specPanel.classList.toggle("open", willOpen);
+      specPanel.setAttribute("aria-hidden", String(!willOpen));
+    }
+
+    specFab.addEventListener("click", () => {
+      if (specFab.dataset.dragged === "true") {
+        specFab.dataset.dragged = "false";
+        return;
+      }
+      toggleSpecPanel();
+    });
+
+    closeSpecPanel.addEventListener("click", () => toggleSpecPanel(false));
+
+    let pointerId = null;
+    let startX = 0;
+    let startY = 0;
+    let originLeft = 0;
+    let originTop = 0;
+    let moved = false;
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    specFab.addEventListener("pointerdown", (event) => {
+      pointerId = event.pointerId;
+      moved = false;
+      specFab.dataset.dragged = "false";
+      startX = event.clientX;
+      startY = event.clientY;
+      const rect = specFab.getBoundingClientRect();
+      originLeft = rect.left;
+      originTop = rect.top;
+      specFab.setPointerCapture(pointerId);
+    });
+
+    specFab.addEventListener("pointermove", (event) => {
+      if (pointerId !== event.pointerId) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        moved = true;
+      }
+
+      const rect = specFab.getBoundingClientRect();
+      const nextLeft = clamp(originLeft + dx, 8, window.innerWidth - rect.width - 8);
+      const nextTop = clamp(originTop + dy, 8, window.innerHeight - rect.height - 8);
+
+      specFab.style.left = nextLeft + "px";
+      specFab.style.top = nextTop + "px";
+      specFab.style.right = "auto";
+      specFab.style.bottom = "auto";
+    });
+
+    function releasePointer(event) {
+      if (pointerId !== event.pointerId) return;
+      if (moved) {
+        specFab.dataset.dragged = "true";
+      }
+      specFab.releasePointerCapture(pointerId);
+      pointerId = null;
+    }
+
+    specFab.addEventListener("pointerup", releasePointer);
+    specFab.addEventListener("pointercancel", releasePointer);
+
+    applyState("available");
+  </script>
+</body>
+</html>
